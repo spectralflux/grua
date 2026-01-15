@@ -227,7 +227,7 @@ func (m *Model) renderStatusBar() string {
 }
 
 func (m *Model) renderLogo() string {
-	text := "GRUA - Change Preview Gremlin"
+	text := "Gruagach - Change Review Gremlin"
 	var result strings.Builder
 
 	textLen := len(text)
@@ -272,7 +272,6 @@ func (m *Model) renderHelp() string {
 		{"g / G", "Jump to top/bottom"},
 		{"Ctrl+u / Ctrl+d", "Page up/down"},
 		{"Tab", "Switch between file list and diff view"},
-		{"Enter", "Toggle section expand/collapse"},
 		{"?", "Toggle this help"},
 		{"q / Ctrl+c", "Quit"},
 	}

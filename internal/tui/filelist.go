@@ -100,8 +100,6 @@ func (f *FileList) Update(msg tea.Msg) (*FileList, tea.Cmd) {
 			f.cursor = 0
 		case key.Matches(msg, f.keys.Bottom):
 			f.cursor = max(0, len(f.items)-1)
-		case key.Matches(msg, f.keys.Enter):
-			f.toggleExpanded()
 		}
 	}
 	return f, nil
@@ -116,20 +114,6 @@ func (f *FileList) moveUp() {
 func (f *FileList) moveDown() {
 	if f.cursor < len(f.items)-1 {
 		f.cursor++
-	}
-}
-
-func (f *FileList) toggleExpanded() {
-	if f.cursor < 0 || f.cursor >= len(f.items) {
-		return
-	}
-	item := f.items[f.cursor]
-	if item.IsHeader {
-		if item.HeaderText == "STAGED" {
-			f.stagedExpanded = !f.stagedExpanded
-		} else {
-			f.unstagedExpanded = !f.unstagedExpanded
-		}
 	}
 }
 

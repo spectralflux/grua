@@ -11,7 +11,6 @@ type KeyMap struct {
 	PageUp   key.Binding
 	PageDown key.Binding
 	Tab      key.Binding
-	Enter    key.Binding
 	Help     key.Binding
 	Quit     key.Binding
 }
@@ -46,10 +45,6 @@ func DefaultKeyMap() KeyMap {
 			key.WithKeys("tab"),
 			key.WithHelp("Tab", "switch pane"),
 		),
-		Enter: key.NewBinding(
-			key.WithKeys("enter"),
-			key.WithHelp("Enter", "select"),
-		),
 		Help: key.NewBinding(
 			key.WithKeys("?"),
 			key.WithHelp("?", "help"),
@@ -68,7 +63,7 @@ func (k KeyMap) ShortHelp() []key.Binding {
 func (k KeyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{k.Up, k.Down, k.Top, k.Bottom},
-		{k.PageUp, k.PageDown, k.Tab, k.Enter},
+		{k.PageUp, k.PageDown, k.Tab},
 		{k.Help, k.Quit},
 	}
 }
