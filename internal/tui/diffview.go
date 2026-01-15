@@ -45,7 +45,6 @@ func (d *DiffView) SetSize(width, height int) {
 	if !d.ready {
 		d.viewport = viewport.New(viewportWidth, viewportHeight)
 		d.viewport.YPosition = 0
-		d.viewport.HighPerformanceRendering = false
 		d.ready = true
 	} else {
 		d.viewport.Width = viewportWidth
@@ -140,9 +139,9 @@ func (d *DiffView) Update(msg tea.Msg) (*DiffView, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, d.keys.Up):
-			d.viewport.LineUp(1)
+			d.viewport.ScrollUp(1)
 		case key.Matches(msg, d.keys.Down):
-			d.viewport.LineDown(1)
+			d.viewport.ScrollDown(1)
 		case key.Matches(msg, d.keys.Top):
 			d.viewport.GotoTop()
 		case key.Matches(msg, d.keys.Bottom):
