@@ -19,6 +19,17 @@ var (
 	ColorBg          = lipgloss.Color("#282A36")
 	ColorHighlight   = lipgloss.Color("#44475A")
 	ColorStatusBadge = lipgloss.Color("#50FA7B")
+	ColorStatusBarBg = lipgloss.Color("#1E1F29")
+
+	LogoGradient = []lipgloss.Color{
+		lipgloss.Color("#E9B8FF"),
+		lipgloss.Color("#D896FF"),
+		lipgloss.Color("#C778FF"),
+		lipgloss.Color("#B65EFF"),
+		lipgloss.Color("#A855F7"),
+		lipgloss.Color("#9333EA"),
+		lipgloss.Color("#7E22CE"),
+	}
 )
 
 // Styles holds all lipgloss styles for the TUI.
@@ -133,15 +144,18 @@ func NewStyles() *Styles {
 		Foreground(ColorFg)
 
 	s.StatusBar = lipgloss.NewStyle().
+		Background(ColorStatusBarBg).
 		Foreground(ColorDim).
 		Padding(0, 1)
 
 	s.HelpKey = lipgloss.NewStyle().
+		Background(ColorStatusBarBg).
 		Foreground(ColorSelected).
 		Bold(true)
 
 	s.HelpDesc = lipgloss.NewStyle().
-		Foreground(ColorDim)
+		Background(ColorStatusBarBg).
+		Foreground(lipgloss.Color("#8B8B9E"))
 
 	return s
 }

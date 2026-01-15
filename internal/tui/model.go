@@ -146,9 +146,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *Model) updateLayout() {
-	titleHeight := 3
 	statusHeight := 2
-	availableHeight := m.height - titleHeight - statusHeight
+	availableHeight := m.height - statusHeight
 
 	fileListWidth := m.width / 4
 	if fileListWidth < 20 {
@@ -178,13 +177,6 @@ func (m *Model) View() string {
 
 	var b strings.Builder
 
-	title := m.styles.TitleText.Render("🔍 grua - preview changes")
-	titleBar := m.styles.TitleBar.
-		Width(m.width).
-		Render(title)
-	b.WriteString(titleBar)
-	b.WriteString("\n\n")
-
 	fileListView := m.fileList.View(m.activePane == PaneFileList)
 	diffViewView := m.diffView.View(m.activePane == PaneDiffView)
 
@@ -204,17 +196,59 @@ func (m *Model) View() string {
 }
 
 func (m *Model) renderStatusBar() string {
-	var items []string
+	sep := lipgloss.NewStyle().
+		Background(ColorStatusBarBg).
+		Foreground(ColorBorder).
+		Render("  │  ")
 
+	var items []string
 	items = append(items, m.styles.HelpKey.Render("j/k")+" "+m.styles.HelpDesc.Render("up/down"))
 	items = append(items, m.styles.HelpKey.Render("Tab")+" "+m.styles.HelpDesc.Render("switch pane"))
 	items = append(items, m.styles.HelpKey.Render("g/G")+" "+m.styles.HelpDesc.Render("top/bottom"))
 	items = append(items, m.styles.HelpKey.Render("q")+" "+m.styles.HelpDesc.Render("quit"))
 	items = append(items, m.styles.HelpKey.Render("?")+" "+m.styles.HelpDesc.Render("help"))
 
-	return m.styles.StatusBar.
+	left := strings.Join(items, sep)
+	right := m.renderLogo()
+
+	contentWidth := lipgloss.Width(left) + lipgloss.Width(right)
+	gap := m.width - contentWidth - 2
+	if gap < 0 {
+		gap = 0
+	}
+
+	gapStyle := lipgloss.NewStyle().Background(ColorStatusBarBg)
+	fullContent := left + gapStyle.Render(strings.Repeat(" ", gap)) + right
+
+	return lipgloss.NewStyle().
+		Background(ColorStatusBarBg).
 		Width(m.width).
-		Render(strings.Join(items, "  │  "))
+		Render(fullContent)
+}
+
+func (m *Model) renderLogo() string {
+	text := "GRUA - Change Preview Gremlin"
+	var result strings.Builder
+
+	textLen := len(text)
+	gradLen := len(LogoGradient)
+
+	for i, ch := range text {
+		gradIdx := i * (gradLen - 1) / max(textLen-1, 1)
+		color := LogoGradient[gradIdx]
+		style := lipgloss.NewStyle().
+			Foreground(color).
+			Background(ColorStatusBarBg).
+			Bold(true)
+		result.WriteString(style.Render(string(ch)))
+	}
+
+	suffix := lipgloss.NewStyle().
+		Foreground(ColorDim).
+		Background(ColorStatusBarBg).
+		Render(" 👹")
+
+	return result.String() + suffix
 }
 
 func (m *Model) renderHelp() string {
