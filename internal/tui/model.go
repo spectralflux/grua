@@ -82,7 +82,13 @@ func (m *Model) loadFiles() tea.Msg {
 
 func (m *Model) loadDiff(file git.FileStatus) tea.Cmd {
 	return func() tea.Msg {
-		diff, err := m.gitService.GetDiff(file.Path, file.Staged)
+		var diff *git.FileDiff
+		var err error
+		if file.Unversioned {
+			diff, err = m.gitService.GetUnversionedDiff(file.Path)
+		} else {
+			diff, err = m.gitService.GetDiff(file.Path, file.Staged)
+		}
 		return diffMsg{diff: diff, err: err}
 	}
 }
@@ -120,6 +126,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.diffView, _ = m.diffView.Update(msg)
 		}
 
+	case tea.MouseMsg:
+		if msg.Button == tea.MouseButtonWheelUp || msg.Button == tea.MouseButtonWheelDown {
+			m.diffView, _ = m.diffView.Update(msg)
+		}
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -132,9 +143,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.files = msg.files
+		hadSelection := m.currentFile != nil
 		m.fileList.SetFiles(msg.files)
 
-		if len(msg.files) > 0 {
+		if !hadSelection && len(msg.files) > 0 {
 			for i := 0; i < m.fileList.ItemCount(); i++ {
 				if file := m.fileList.SelectedFile(); file != nil {
 					m.currentFile = file

@@ -41,6 +41,7 @@ type Styles struct {
 	FileListBorderActive lipgloss.Style
 	StagedHeader         lipgloss.Style
 	UnstagedHeader       lipgloss.Style
+	UnversionedHeader    lipgloss.Style
 	FileItem             lipgloss.Style
 	FileItemSelected     lipgloss.Style
 	StatusBadge          lipgloss.Style
@@ -90,6 +91,12 @@ func NewStyles() *Styles {
 
 	s.UnstagedHeader = lipgloss.NewStyle().
 		Foreground(ColorUnstaged).
+		Bold(true).
+		MarginTop(1).
+		MarginBottom(0)
+
+	s.UnversionedHeader = lipgloss.NewStyle().
+		Foreground(ColorAddedFg).
 		Bold(true).
 		MarginTop(1).
 		MarginBottom(0)

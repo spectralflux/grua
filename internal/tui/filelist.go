@@ -41,11 +41,15 @@ func (f *FileList) SetSize(width, height int) {
 }
 
 func (f *FileList) SetFiles(files []git.FileStatus) {
+	prevSelected := f.SelectedFile()
+
 	f.items = nil
 
-	var staged, unstaged []git.FileStatus
+	var staged, unstaged, unversioned []git.FileStatus
 	for _, file := range files {
-		if file.Staged {
+		if file.Unversioned {
+			unversioned = append(unversioned, file)
+		} else if file.Staged {
 			staged = append(staged, file)
 		} else {
 			unstaged = append(unstaged, file)
@@ -69,6 +73,27 @@ func (f *FileList) SetFiles(files []git.FileStatus) {
 		})
 		for _, file := range unstaged {
 			f.items = append(f.items, FileListItem{File: file})
+		}
+	}
+
+	if len(unversioned) > 0 {
+		f.items = append(f.items, FileListItem{
+			IsHeader:   true,
+			HeaderText: "UNVERSIONED",
+		})
+		for _, file := range unversioned {
+			f.items = append(f.items, FileListItem{File: file})
+		}
+	}
+
+	if prevSelected != nil {
+		for i, item := range f.items {
+			if !item.IsHeader && item.File.Path == prevSelected.Path &&
+				item.File.Staged == prevSelected.Staged &&
+				item.File.Unversioned == prevSelected.Unversioned {
+				f.cursor = i
+				return
+			}
 		}
 	}
 
@@ -169,8 +194,11 @@ func (f *FileList) View(active bool) string {
 
 		if item.IsHeader {
 			headerStyle := f.styles.StagedHeader
-			if item.HeaderText == "UNSTAGED" {
+			switch item.HeaderText {
+			case "UNSTAGED":
 				headerStyle = f.styles.UnstagedHeader
+			case "UNVERSIONED":
+				headerStyle = f.styles.UnversionedHeader
 			}
 			line = headerStyle.Render(fmt.Sprintf(" ▾ %s", item.HeaderText))
 		} else {

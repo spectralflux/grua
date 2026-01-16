@@ -3,6 +3,7 @@ package git
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -10,9 +11,10 @@ import (
 
 // FileStatus represents the status of a changed file.
 type FileStatus struct {
-	Path   string
-	Status string
-	Staged bool
+	Path        string
+	Status      string
+	Staged      bool
+	Unversioned bool
 }
 
 // Hunk represents a diff hunk.
@@ -84,20 +86,28 @@ func (s *Service) GetChangedFiles() ([]FileStatus, error) {
 			continue
 		}
 
-		if stagedStatus != ' ' && stagedStatus != '?' {
+		if stagedStatus == '?' && unstagedStatus == '?' {
 			files = append(files, FileStatus{
-				Path:   path,
-				Status: string(stagedStatus),
-				Staged: true,
+				Path:        path,
+				Status:      "N",
+				Unversioned: true,
 			})
-		}
+		} else {
+			if stagedStatus != ' ' && stagedStatus != '?' {
+				files = append(files, FileStatus{
+					Path:   path,
+					Status: string(stagedStatus),
+					Staged: true,
+				})
+			}
 
-		if unstagedStatus != ' ' && unstagedStatus != '?' {
-			files = append(files, FileStatus{
-				Path:   path,
-				Status: string(unstagedStatus),
-				Staged: false,
-			})
+			if unstagedStatus != ' ' && unstagedStatus != '?' {
+				files = append(files, FileStatus{
+					Path:   path,
+					Status: string(unstagedStatus),
+					Staged: false,
+				})
+			}
 		}
 	}
 
@@ -126,6 +136,41 @@ func (s *Service) GetDiff(path string, staged bool) (*FileDiff, error) {
 	}
 
 	return s.parseDiff(path, staged, output)
+}
+
+// GetUnversionedDiff returns a synthetic diff for an unversioned file (all lines as added).
+func (s *Service) GetUnversionedDiff(path string) (*FileDiff, error) {
+	fullPath := filepath.Join(s.repoPath, path)
+	output, err := exec.Command("cat", fullPath).Output()
+	if err != nil {
+		return &FileDiff{Path: path}, nil
+	}
+
+	lines := strings.Split(string(output), "\n")
+	if len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+
+	var diffLines []DiffLine
+	for i, line := range lines {
+		diffLines = append(diffLines, DiffLine{
+			Content:    line,
+			Type:       LineAdded,
+			NewLineNum: i + 1,
+		})
+	}
+
+	header := fmt.Sprintf("@@ -0,0 +1,%d @@ (unversioned file)", len(lines))
+
+	return &FileDiff{
+		Path: path,
+		Hunks: []Hunk{
+			{
+				Header: header,
+				Lines:  diffLines,
+			},
+		},
+	}, nil
 }
 
 func (s *Service) getNewFileDiff(path string, staged bool) (*FileDiff, error) {
