@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"grua/internal/git"
 
@@ -10,6 +11,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+const refreshInterval = 10 * time.Second
 
 type Pane int
 
@@ -46,6 +49,8 @@ type diffMsg struct {
 	err  error
 }
 
+type tickMsg time.Time
+
 func NewModel(repoPath string) *Model {
 	styles := NewStyles()
 	keys := DefaultKeyMap()
@@ -61,7 +66,13 @@ func NewModel(repoPath string) *Model {
 }
 
 func (m *Model) Init() tea.Cmd {
-	return m.loadFiles
+	return tea.Batch(m.loadFiles, m.doTick())
+}
+
+func (m *Model) doTick() tea.Cmd {
+	return tea.Tick(refreshInterval, func(t time.Time) tea.Msg {
+		return tickMsg(t)
+	})
 }
 
 func (m *Model) loadFiles() tea.Msg {
@@ -140,6 +151,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.diffView.SetDiff(msg.diff)
+
+	case tickMsg:
+		cmds = append(cmds, m.loadFiles, m.doTick())
+		if m.currentFile != nil {
+			cmds = append(cmds, m.loadDiff(*m.currentFile))
+		}
 	}
 
 	return m, tea.Batch(cmds...)

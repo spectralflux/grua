@@ -16,27 +16,22 @@ type FileListItem struct {
 	File       git.FileStatus
 	IsHeader   bool
 	HeaderText string
-	Expanded   bool
 }
 
 // FileList is the file list component.
 type FileList struct {
-	items            []FileListItem
-	cursor           int
-	width            int
-	height           int
-	styles           *Styles
-	keys             KeyMap
-	stagedExpanded   bool
-	unstagedExpanded bool
+	items  []FileListItem
+	cursor int
+	width  int
+	height int
+	styles *Styles
+	keys   KeyMap
 }
 
 func NewFileList(styles *Styles, keys KeyMap) *FileList {
 	return &FileList{
-		styles:           styles,
-		keys:             keys,
-		stagedExpanded:   true,
-		unstagedExpanded: true,
+		styles: styles,
+		keys:   keys,
 	}
 }
 
@@ -61,12 +56,9 @@ func (f *FileList) SetFiles(files []git.FileStatus) {
 		f.items = append(f.items, FileListItem{
 			IsHeader:   true,
 			HeaderText: "STAGED",
-			Expanded:   f.stagedExpanded,
 		})
-		if f.stagedExpanded {
-			for _, file := range staged {
-				f.items = append(f.items, FileListItem{File: file})
-			}
+		for _, file := range staged {
+			f.items = append(f.items, FileListItem{File: file})
 		}
 	}
 
@@ -74,18 +66,13 @@ func (f *FileList) SetFiles(files []git.FileStatus) {
 		f.items = append(f.items, FileListItem{
 			IsHeader:   true,
 			HeaderText: "UNSTAGED",
-			Expanded:   f.unstagedExpanded,
 		})
-		if f.unstagedExpanded {
-			for _, file := range unstaged {
-				f.items = append(f.items, FileListItem{File: file})
-			}
+		for _, file := range unstaged {
+			f.items = append(f.items, FileListItem{File: file})
 		}
 	}
 
-	if f.cursor >= len(f.items) {
-		f.cursor = max(0, len(f.items)-1)
-	}
+	f.cursor = f.firstFileIndex()
 }
 
 func (f *FileList) Update(msg tea.Msg) (*FileList, tea.Cmd) {
@@ -97,24 +84,62 @@ func (f *FileList) Update(msg tea.Msg) (*FileList, tea.Cmd) {
 		case key.Matches(msg, f.keys.Down):
 			f.moveDown()
 		case key.Matches(msg, f.keys.Top):
-			f.cursor = 0
+			f.cursor = f.firstFileIndex()
 		case key.Matches(msg, f.keys.Bottom):
-			f.cursor = max(0, len(f.items)-1)
+			f.cursor = f.lastFileIndex()
 		}
 	}
 	return f, nil
 }
 
 func (f *FileList) moveUp() {
-	if f.cursor > 0 {
+	start := f.cursor
+	for {
 		f.cursor--
+		if f.cursor < 0 {
+			f.cursor = len(f.items) - 1
+		}
+		if f.cursor == start {
+			break
+		}
+		if !f.items[f.cursor].IsHeader {
+			break
+		}
 	}
 }
 
 func (f *FileList) moveDown() {
-	if f.cursor < len(f.items)-1 {
+	start := f.cursor
+	for {
 		f.cursor++
+		if f.cursor >= len(f.items) {
+			f.cursor = 0
+		}
+		if f.cursor == start {
+			break
+		}
+		if !f.items[f.cursor].IsHeader {
+			break
+		}
 	}
+}
+
+func (f *FileList) firstFileIndex() int {
+	for i, item := range f.items {
+		if !item.IsHeader {
+			return i
+		}
+	}
+	return 0
+}
+
+func (f *FileList) lastFileIndex() int {
+	for i := len(f.items) - 1; i >= 0; i-- {
+		if !f.items[i].IsHeader {
+			return i
+		}
+	}
+	return 0
 }
 
 func (f *FileList) SelectedFile() *git.FileStatus {
@@ -140,29 +165,14 @@ func (f *FileList) View(active bool) string {
 	var lines []string
 	for i, item := range f.items {
 		var line string
-		isSelected := i == f.cursor
+		isSelected := i == f.cursor && !item.IsHeader
 
 		if item.IsHeader {
-			arrow := "▾"
-			if (item.HeaderText == "STAGED" && !f.stagedExpanded) ||
-				(item.HeaderText == "UNSTAGED" && !f.unstagedExpanded) {
-				arrow = "▸"
-			}
-
 			headerStyle := f.styles.StagedHeader
 			if item.HeaderText == "UNSTAGED" {
 				headerStyle = f.styles.UnstagedHeader
 			}
-
-			if isSelected {
-				line = lipgloss.NewStyle().
-					Foreground(ColorBg).
-					Background(ColorSelected).
-					Bold(true).
-					Render(fmt.Sprintf(" %s %s ", arrow, item.HeaderText))
-			} else {
-				line = headerStyle.Render(fmt.Sprintf(" %s %s", arrow, item.HeaderText))
-			}
+			line = headerStyle.Render(fmt.Sprintf(" ▾ %s", item.HeaderText))
 		} else {
 			filename := filepath.Base(item.File.Path)
 			status := item.File.Status
