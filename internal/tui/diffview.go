@@ -57,14 +57,32 @@ func (d *DiffView) SetSize(width, height int) {
 }
 
 func (d *DiffView) SetDiff(diff *git.FileDiff) {
+	isNewFile := d.diff == nil || diff == nil ||
+		d.diff.Path != diff.Path || d.diff.Staged != diff.Staged
+
 	d.diff = diff
 	if diff != nil {
 		d.filePath = diff.Path
 	} else {
 		d.filePath = ""
 	}
+
+	prevYOffset := d.viewport.YOffset
 	d.renderDiff()
-	d.viewport.GotoTop()
+
+	if isNewFile {
+		d.viewport.GotoTop()
+	} else {
+		maxYOffset := d.viewport.TotalLineCount() - d.viewport.Height
+		if maxYOffset < 0 {
+			maxYOffset = 0
+		}
+		if prevYOffset > maxYOffset {
+			d.viewport.SetYOffset(maxYOffset)
+		} else {
+			d.viewport.SetYOffset(prevYOffset)
+		}
+	}
 }
 
 func (d *DiffView) renderDiff() {
