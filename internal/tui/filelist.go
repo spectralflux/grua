@@ -118,6 +118,9 @@ func (f *FileList) Update(msg tea.Msg) (*FileList, tea.Cmd) {
 }
 
 func (f *FileList) moveUp() {
+	if len(f.items) == 0 {
+		return
+	}
 	start := f.cursor
 	for {
 		f.cursor--
@@ -134,6 +137,9 @@ func (f *FileList) moveUp() {
 }
 
 func (f *FileList) moveDown() {
+	if len(f.items) == 0 {
+		return
+	}
 	start := f.cursor
 	for {
 		f.cursor++
